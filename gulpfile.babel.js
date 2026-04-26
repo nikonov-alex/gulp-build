@@ -1,5 +1,6 @@
 import gulp from "gulp"
-import { map, babel, civet } from "./index.js";
+import { map, babel } from "./index.js";
+import civet from "gulp-civet"
 import ts from "gulp-typescript";
 const typescript = ts.createProject( "tsconfig.json" );
 import terser from 'gulp-terser'
@@ -10,7 +11,10 @@ const build = () =>
         "./index.civet",
         "./lib/gulp-civet.d.ts"
     ] )
-        |> civet
+        |> map( civet( {
+            extension: '.ts',
+            js: false
+        } ) )
         |> map( typescript() )
         |> babel
         |> map( terser() )

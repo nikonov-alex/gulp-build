@@ -51,7 +51,7 @@ civet := (stream: Stream) =>
             js: false
         } ) )
         |> map( transform( "utf8",
-            &.replaceAll( /\.civet\b/gi, "" )
+            &.replaceAll( /\.[c]ivet\b/gi, "" )
         ) )
         |> attachMetadata ., { [ORIGINAL_EXTENSION]: ".civet" }
 

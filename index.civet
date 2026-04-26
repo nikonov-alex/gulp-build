@@ -64,7 +64,10 @@ babel := (stream: Stream) =>
                 //@ts-ignore
                 [ "@babel/preset-env", {
                     useBuiltIns: "usage",
-                    corejs: "3.49"
+                    corejs: {
+                        version: "3.49",
+                        proposals: true
+                    }
                 } ]
             ],
         } ) )

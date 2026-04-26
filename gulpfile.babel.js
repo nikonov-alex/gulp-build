@@ -1,8 +1,8 @@
 import gulp from "gulp"
-import { map, civet } from "./index.js";
+import { map, babel, civet } from "./index.js";
 import ts from "gulp-typescript";
 const typescript = ts.createProject( "tsconfig.json" );
-import babel from "gulp-babel"
+import terser from 'gulp-terser'
 
 
 const build = () =>
@@ -12,7 +12,8 @@ const build = () =>
     ] )
         |> civet
         |> map( typescript() )
-        |> map( babel() )
+        |> babel
+        |> map( terser() )
         |> map( gulp.dest( "." ) )
 
 

@@ -1,0 +1,121 @@
+import gulp from "gulp"
+import rename from "gulp-rename"
+import transform from "gulp-transform"
+import civetCompiler from "gulp-civet"
+import ts from "gulp-typescript";
+import babelTranspiler from "gulp-babel"
+import esbuildBundler from "./lib/gulp-esbuild"
+import terser from 'gulp-terser'
+
+
+ORIGINAL_EXTENSION := "originalExtension"
+
+
+Stream ::= NodeJS.ReadWriteStream
+
+
+
+map :=
+    (plugin: Stream) =>
+        (instream: Stream) => {
+            outstream := instream.pipe(plugin)
+            //@ts-ignore
+            outstream._meta = instream._meta
+            outstream
+        }
+
+
+
+attachMetadata := <M < {}>(stream: Stream, data: M): Stream & { _meta: M } => {
+    meta := if "_meta" in stream then stream._meta as {} else ({ })
+
+    //@ts-ignore//@ts-ignore
+    stream._meta = { ... meta, ... data }
+    //@ts-ignore
+    stream
+}
+
+hasMetadata := <K < string>(stream: Stream, key: K): stream is Stream & { _meta: { [k in K]: unknown } } =>
+    "_meta" in stream && stream._meta <? "object" && null !== stream._meta && key in stream._meta
+
+getMetadata := <K < string>(stream: Stream & { _meta: { [k in K]: unknown } }, key: K): unknown =>
+    stream._meta[key]
+        
+
+
+
+civet := (stream: Stream) =>
+    stream
+        |> map( civetCompiler( {
+            extension: '.ts'
+            js: false
+        } ) )
+        |> map( transform( "utf8",
+            &.replaceAll( /\.civet\b/gi, "" )
+        ) )
+        |> attachMetadata ., { [ORIGINAL_EXTENSION]: ".civet" }
+
+
+
+babel := (stream: Stream) =>
+    stream
+        |> map( babelTranspiler( {
+            presets: [
+                //@ts-ignore
+                [ "@babel/preset-env", {
+                    useBuiltIns: "usage",
+                    corejs: "3.49"
+                } ]
+            ],
+        } ) )
+
+        
+
+esbuild := ( entry: string, outfile: string ) => (stream: Stream) => {
+
+    maybeRestoreExtnames := (stream: Stream) =>
+        if !hasMetadata(stream, ORIGINAL_EXTENSION) then stream
+        else getMetadata(stream, ORIGINAL_EXTENSION)
+        |> (extname) =>
+            if !(extname <? "string" && extname) then stream
+            else stream |> map( rename( { extname } ) )
+
+    stream
+        |> maybeRestoreExtnames
+        |> map( esbuildBundler( {
+            entry
+            bundle: true
+            loader: { ".civet": "js" }
+            resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ]
+        } ) )
+        |> map( rename( outfile ) )
+}
+
+
+
+makeTask := ( { input, output }: {
+    input: {
+        files: string | string[]
+        entry: string
+    }
+    output: {
+        dir: string
+        filename: string
+    }
+} ) => {
+    typescript := ts.createProject( "tsconfig.json" )
+
+    () =>
+        gulp.src( input.files )
+            |> civet
+            |> map( typescript() )
+            |> babel
+            |> esbuild( input.entry, output.filename )
+            |> map( terser() )
+            |> map( gulp.dest( output.dir ) )
+}
+
+
+
+export { map, civet, babel, esbuild }
+export default makeTask

@@ -74,7 +74,13 @@ babel := (stream: Stream) =>
 
         
 
-esbuild := ( entry: string, outfile: string ) => (stream: Stream) => {
+type BundlerOptions = Omit<esbuildBundler.Options, "entry">
+
+esbuild := (
+    entry: string,
+    outfile: string,
+    options: BundlerOptions = { }
+) => (stream: Stream) => {
 
     maybeRestoreExtnames := (stream: Stream) =>
         if !hasMetadata(stream, ORIGINAL_EXTENSION) then stream
@@ -90,13 +96,14 @@ esbuild := ( entry: string, outfile: string ) => (stream: Stream) => {
             bundle: true
             loader: { ".civet": "js" }
             resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ]
+            ... options
         } ) )
         |> map( rename( outfile ) )
 }
 
 
 
-makeTask := ( { input, output }: {
+makeTask := ( { input, output, ... options }: {
     input: {
         files: string | string[]
         entry: string
@@ -104,7 +111,8 @@ makeTask := ( { input, output }: {
     output: {
         dir: string
         filename: string
-    }
+    },
+    esbuild?: BundlerOptions
 } ) => {
     typescript := ts.createProject( "tsconfig.json" )
 
@@ -113,7 +121,7 @@ makeTask := ( { input, output }: {
             |> civet
             |> map( typescript() )
             |> babel
-            |> esbuild( input.entry, output.filename )
+            |> esbuild( input.entry, output.filename, options.esbuild )
             |> map( terser() )
             |> map( gulp.dest( output.dir ) )
 }

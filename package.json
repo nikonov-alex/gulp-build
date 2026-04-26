@@ -1,6 +1,6 @@
 {
   "name": "@nikonov-alex/gulp-build",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Gulp building script",
   "main": "index.js",
   "license": "SEE LICENSE IN LICENSE.md AND LICENCE FOR 'gulp-esbuild' PACKAGE MODIFIED AND USED IN THIS CODE IN THIRD-PARTY-LICENSES.md",

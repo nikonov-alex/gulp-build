@@ -47,7 +47,7 @@ getMetadata := <K < string>(stream: Stream & { _meta: { [k in K]: unknown } }, k
 civet := (stream: Stream) =>
     stream
         |> map( civetCompiler( {
-            extension: '.ts'
+            extension: '.tsx'
             js: false
         } ) )
         |> map( transform( "utf8",

@@ -19,6 +19,7 @@ declare const makeTask: ({ input, output, ...options }: {
         filename: string;
     };
     esbuild?: BundlerOptions;
+    development?: boolean
 }) => () => NodeJS.ReadWriteStream;
 export { map, civet, babel, esbuild };
 export default makeTask;

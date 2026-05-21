@@ -24,6 +24,10 @@ map :=
             outstream
         }
 
+id := <A>( value: A ) => value
+
+skip := id
+
 
 
 attachMetadata := <M < {}>(stream: Stream, data: M): Stream & { _meta: M } => {
@@ -103,7 +107,7 @@ esbuild := (
 
 
 
-makeTask := ( { input, output, ... options }: {
+makeTask := ( { input, output, development, ... options }: {
     input: {
         files: string | string[]
         entry: string
@@ -111,18 +115,21 @@ makeTask := ( { input, output, ... options }: {
     output: {
         dir: string
         filename: string
-    },
+    }
     esbuild?: BundlerOptions
+    development?: boolean
 } ) => {
     typescript := ts.createProject( "tsconfig.json" )
+    maybeBabel := if development then skip else babel
+    maybeMinify := if development then skip else map( terser() )
 
     () =>
         gulp.src( input.files )
             |> civet
             |> map( typescript() )
-            |> babel
+            |> maybeBabel
             |> esbuild( input.entry, output.filename, options.esbuild )
-            |> map( terser() )
+            |> maybeMinify
             |> map( gulp.dest( output.dir ) )
 }
 

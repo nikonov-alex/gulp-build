@@ -127,7 +127,7 @@ makeTask := ( { input, output, development, ... options }: {
     () =>
         gulp.src( input.files )
             |> civet
-            |> map( typescript() )
+            |> map( gulpIf( ".tsx" === &.extname, typescript() ) )
             |> maybeBabel
             |> esbuild( input.entry, output.filename, options.esbuild )
             |> maybeMinify

@@ -7,7 +7,7 @@ import ts from "gulp-typescript"
 import babelTranspiler from "gulp-babel"
 import esbuildBundler from "./lib/gulp-esbuild"
 import terser from 'gulp-terser'
-import { sassPlugin } from 'esbuild-sass-plugin';
+import { sassPlugin } from 'esbuild-sass-plugin'
 
 
 ORIGINAL_EXTENSION := "originalExtension"

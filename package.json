@@ -1,6 +1,6 @@
 {
   "name": "@nikonov-alex/gulp-build",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Gulp building script",
   "main": "index.js",
   "license": "SEE LICENSE IN LICENSE.md AND LICENCE FOR 'gulp-esbuild' PACKAGE MODIFIED AND USED IN THIS CODE IN THIRD-PARTY-LICENSES.md",
@@ -24,7 +24,9 @@
     "@types/gulp-if": "^3.0.5",
     "@types/gulp-rename": "^2.0.7",
     "@types/gulp-terser": "^1.2.6",
-    "@types/node": "^25.6.0"
+    "@types/node": "^25.6.0",
+    "esbuild-sass-plugin": "^3.7.0",
+    "sass": "^1.101.0"
   },
   "dependencies": {
     "@babel/preset-env": "^7.29.2",

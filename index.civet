@@ -7,6 +7,7 @@ import ts from "gulp-typescript"
 import babelTranspiler from "gulp-babel"
 import esbuildBundler from "./lib/gulp-esbuild"
 import terser from 'gulp-terser'
+import { sassPlugin } from 'esbuild-sass-plugin';
 
 
 ORIGINAL_EXTENSION := "originalExtension"
@@ -64,7 +65,7 @@ civet := (stream: Stream) =>
 
 babel := (stream: Stream) =>
     stream
-        |> map( babelTranspiler( {
+        |> map( gulpIf( ".js" === &.extname, babelTranspiler( {
             presets: [
                 //@ts-ignore
                 [ "@babel/preset-env", {
@@ -75,7 +76,7 @@ babel := (stream: Stream) =>
                     }
                 } ]
             ],
-        } ) )
+        } ) ) )
 
         
 
@@ -100,7 +101,10 @@ esbuild := (
             entry
             bundle: true
             loader: { ".civet": "js" }
-            resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ]
+            resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ],
+            plugins: [
+                sassPlugin({ })
+            ],
             ... options
         } ) )
         |> map( rename( outfile ) )

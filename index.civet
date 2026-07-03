@@ -2,7 +2,8 @@ import gulp from "gulp"
 import rename from "gulp-rename"
 import transform from "gulp-transform"
 import civetCompiler from "gulp-civet"
-import ts from "gulp-typescript";
+import gulpIf from "gulp-if"
+import ts from "gulp-typescript"
 import babelTranspiler from "gulp-babel"
 import esbuildBundler from "./lib/gulp-esbuild"
 import terser from 'gulp-terser'
@@ -50,10 +51,10 @@ getMetadata := <K < string>(stream: Stream & { _meta: { [k in K]: unknown } }, k
 
 civet := (stream: Stream) =>
     stream
-        |> map( civetCompiler( {
+        |> map( gulpIf( ".civet" === &.extname, civetCompiler( {
             extension: '.tsx'
             js: false
-        } ) )
+        } ) ) )
         |> map( transform( "utf8",
             &.replaceAll( /\.civet\b/gi, "" )
         ) )
@@ -91,7 +92,7 @@ esbuild := (
         else getMetadata(stream, ORIGINAL_EXTENSION)
         |> (extname) =>
             if !(extname <? "string" && extname) then stream
-            else stream |> map( rename( { extname } ) )
+            else stream |> map( gulpIf( ".js" === &.extname, rename( { extname } ) ) )
 
     stream
         |> maybeRestoreExtnames

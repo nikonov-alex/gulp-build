@@ -11,9 +11,7 @@ yarn-error.log*
 
 /.idea
 .vscode/*
-.babelrc
 .gitignore
 .npmignore
-gulpfile.babel.js
+gulpfile.ts
 index.civet
-tsconfig.json

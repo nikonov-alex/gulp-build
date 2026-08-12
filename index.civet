@@ -1,30 +1,25 @@
 import gulp from "gulp"
-import rename from "gulp-rename"
-import transform from "gulp-transform"
-import civetCompiler from "gulp-civet"
-import gulpIf from "gulp-if"
+import path from 'node:path'
+import civet from "gulp-civet"
 import ts from "gulp-typescript"
-import babelTranspiler from "gulp-babel"
-import esbuildBundler from "./lib/gulp-esbuild"
-import terser from 'gulp-terser'
-import { sassPlugin } from 'esbuild-sass-plugin'
-
-
-ORIGINAL_EXTENSION := "originalExtension"
+typescript := ts.createProject( "tsconfig.json" )
+import rename from "gulp-rename"
+import esbuild from "./lib/gulp-esbuild"
+import dartSass from "sass"
+import gulpSass from "gulp-sass"
+const sass = gulpSass(dartSass)
+import merge from "merge-stream"
+import babel from gulp-babel
+import minify from gulp-terser
+import postcss from gulp-postcss
 
 
 Stream ::= NodeJS.ReadWriteStream
 
-
-
 map :=
     (plugin: Stream) =>
-        (instream: Stream) => {
-            outstream := instream.pipe(plugin)
-            //@ts-ignore
-            outstream._meta = instream._meta
-            outstream
-        }
+        (stream: Stream) =>
+            stream.pipe(plugin)
 
 id := <A>( value: A ) => value
 
@@ -32,89 +27,11 @@ skip := id
 
 
 
-attachMetadata := <M < {}>(stream: Stream, data: M): Stream & { _meta: M } => {
-    meta := if "_meta" in stream then stream._meta as {} else ({ })
-
-    //@ts-ignore//@ts-ignore
-    stream._meta = { ... meta, ... data }
-    //@ts-ignore
-    stream
-}
-
-hasMetadata := <K < string>(stream: Stream, key: K): stream is Stream & { _meta: { [k in K]: unknown } } =>
-    "_meta" in stream && stream._meta <? "object" && null !== stream._meta && key in stream._meta
-
-getMetadata := <K < string>(stream: Stream & { _meta: { [k in K]: unknown } }, key: K): unknown =>
-    stream._meta[key]
-        
-
-
-
-civet := (stream: Stream) =>
-    stream
-        |> map( gulpIf( ".civet" === &.extname, civetCompiler( {
-            extension: '.tsx'
-            js: false
-        } ) ) )
-        |> map( transform( "utf8",
-            &.replaceAll( /\.civet\b/gi, "" )
-        ) )
-        |> attachMetadata ., { [ORIGINAL_EXTENSION]: ".civet" }
-
-
-
-babel := (stream: Stream) =>
-    stream
-        |> map( gulpIf( ".js" === &.extname, babelTranspiler( {
-            presets: [
-                //@ts-ignore
-                [ "@babel/preset-env", {
-                    useBuiltIns: "usage",
-                    corejs: {
-                        version: "3.49",
-                        proposals: true
-                    }
-                } ]
-            ],
-        } ) ) )
-
-        
-
-type BundlerOptions = Omit<esbuildBundler.Options, "entry">
-
-esbuild := (
-    entry: string,
-    outfile: string,
-    options: BundlerOptions = { }
-) => (stream: Stream) => {
-
-    maybeRestoreExtnames := (stream: Stream) =>
-        if !hasMetadata(stream, ORIGINAL_EXTENSION) then stream
-        else getMetadata(stream, ORIGINAL_EXTENSION)
-        |> (extname) =>
-            if !(extname <? "string" && extname) then stream
-            else stream |> map( gulpIf( ".js" === &.extname, rename( { extname } ) ) )
-
-    stream
-        |> maybeRestoreExtnames
-        |> map( esbuildBundler( {
-            entry
-            bundle: true
-            loader: { ".civet": "js" }
-            resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ],
-            plugins: [
-                sassPlugin({ })
-            ],
-            ... options
-        } ) )
-        |> map( rename( outfile ) )
-}
-
-
+type BundlerOptions = Omit<esbuild.Options, "entry">
 
 makeTask := ( { input, output, development, ... options }: {
     input: {
-        files: string | string[]
+        sources: string
         entry: string
     }
     output: {
@@ -123,22 +40,65 @@ makeTask := ( { input, output, development, ... options }: {
     }
     esbuild?: BundlerOptions
     development?: boolean
-} ) => {
-    typescript := ts.createProject( "tsconfig.json" )
-    maybeBabel := if development then skip else babel
-    maybeMinify := if development then skip else map( terser() )
+} ) =>
 
-    () =>
-        gulp.src( input.files )
-            |> civet
-            |> map( gulpIf( ".tsx" === &.extname, typescript() ) )
-            |> maybeBabel
-            |> esbuild( input.entry, output.filename, options.esbuild )
-            |> maybeMinify
-            |> map( gulp.dest( output.dir ) )
-}
+    files := ( relative: string ) =>
+        path.join( input.sources, relative )
+
+    ext := ( ... extensions: string[] ) =>
+        globs := extensions.map( (ext) => files( `/**/*${ext}` ) )
+        gulp.src( globs )
+
+    maybe := ( plugin: Stream ) =>
+        if development then skip else map( plugin )
 
 
+    scripts := do
+        civets := ext( ".civet" )
+            |> map( civet( {
+                extension: '.tsx'
+                js: false
+            } ) )
 
-export { map, civet, babel, esbuild }
+        merge( civets, ext( ".d.ts" ) )
+            |> map( typescript() )
+            |> map( rename( { extname: ".civet" } ) )
+
+
+    styles := do
+        sasses := ext( ".sass" )
+            |> map( sass().on('error', sass.logError) )
+            |> map( rename( { extname: ".sass" }  ) )
+
+        scsses := ext( ".scss" )
+            |> map( sass().on('error', sass.logError) )
+            |> map( rename( { extname: ".scss" } ) )
+
+        merge( sasses, scsses )
+            |> maybe( postcss() )
+
+
+    bundler := esbuild( {
+        entry: files( input.entry )
+        bundle: true
+        loader: {
+            ".civet": "js"
+            '.css': 'text'
+            '.scss': 'text'
+            '.sass': 'text'
+        }
+        resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ]
+        ... options.esbuild
+    } )
+
+
+    merge( scripts, styles )
+        |> map( bundler )
+        |> maybe( babel() )
+        |> maybe( minify() )
+        |> map( rename( output.filename ) )
+        |> map( gulp.dest( output.dir ) )
+
+
+
 export default makeTask

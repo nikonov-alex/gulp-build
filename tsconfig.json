@@ -1,9 +1,19 @@
 {
   "compilerOptions": {
     "skipLibCheck": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "paths": {
+      "gulp-civet": ["./lib/gulp-civet/index.d.ts"]
+    },
+    "typeRoots": ["./node_modules/@types", "./lib"],
+    "jsx": "react-jsx", 
+    "jsxImportSource": "jsx-dom"
+  },
+  "ts-node": {
+    "files": true
   },
   "include": [
-    "./lib/gulp-civet.d.ts"
+    "./globals.d.ts",
+    "lib/**/*.d.ts"
   ]
 }

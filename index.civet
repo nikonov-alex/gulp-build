@@ -9,9 +9,9 @@ import dartSass from "sass"
 import gulpSass from "gulp-sass"
 const sass = gulpSass(dartSass)
 import merge from "merge-stream"
-import babel from gulp-babel
-import minify from gulp-terser
-import postcss from gulp-postcss
+import babel from "gulp-babel"
+import minify from "gulp-terser"
+import postcss from "gulp-postcss"
 
 
 Stream ::= NodeJS.ReadWriteStream

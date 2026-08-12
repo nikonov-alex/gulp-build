@@ -11,5 +11,5 @@ declare const makeTask: ({ input, output, development, ...options }: {
     };
     esbuild?: BundlerOptions;
     development?: boolean;
-}) => NodeJS.ReadWriteStream;
+}) => () => NodeJS.ReadWriteStream;
 export default makeTask;

@@ -1,5 +1,5 @@
 import gulp from "gulp"
-import path from 'node:path'
+import path from 'path'
 import civet from "gulp-civet"
 import ts from "gulp-typescript"
 typescript := ts.createProject( "tsconfig.json" )
@@ -42,11 +42,11 @@ makeTask := ( { input, output, development, ... options }: {
     development?: boolean
 } ) =>
 
-    files := ( relative: string ) =>
-        path.join( input.sources, relative )
+    relative := ( relative: string ) =>
+        path.posix.join( input.sources, relative )
 
     ext := ( ... extensions: string[] ) =>
-        globs := extensions.map( (ext) => files( `/**/*${ext}` ) )
+        globs := extensions.map( (ext) => relative( `/**/*${ext}` ) )
         gulp.src( globs )
 
     maybe := ( plugin: Stream ) =>
@@ -79,7 +79,7 @@ makeTask := ( { input, output, development, ... options }: {
 
 
     bundler := esbuild( {
-        entry: files( input.entry )
+        entry: relative( input.entry )
         bundle: true
         loader: {
             ".civet": "js"

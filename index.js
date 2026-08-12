@@ -7,7 +7,7 @@ exports.default = void 0;
 require("core-js/modules/es.iterator.constructor.js");
 require("core-js/modules/es.iterator.map.js");
 var _gulp = _interopRequireDefault(require("gulp"));
-var _nodePath = _interopRequireDefault(require("node:path"));
+var _path = _interopRequireDefault(require("path"));
 var _gulpCivet = _interopRequireDefault(require("gulp-civet"));
 var _gulpTypescript = _interopRequireDefault(require("gulp-typescript"));
 var _gulpRename = _interopRequireDefault(require("gulp-rename"));
@@ -34,11 +34,11 @@ const makeTask = ({
   development,
   ...options
 }) => {
-  const files = relative => {
-    return _nodePath.default.join(input.sources, relative);
+  const relative = relative => {
+    return _path.default.posix.join(input.sources, relative);
   };
   const ext = (...extensions) => {
-    const globs = extensions.map(ext => files(`/**/*${ext}`));
+    const globs = extensions.map(ext => relative(`/**/*${ext}`));
     return _gulp.default.src(globs);
   };
   const maybe = plugin => {
@@ -71,7 +71,7 @@ const makeTask = ({
   ;
   const styles = ref1;
   const bundler = (0, _gulpEsbuild.default)({
-    entry: files(input.entry),
+    entry: relative(input.entry),
     bundle: true,
     loader: {
       ".civet": "js",

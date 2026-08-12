@@ -91,13 +91,13 @@ makeTask := ( { input, output, development, ... options }: {
         ... options.esbuild
     } )
 
-
-    merge( scripts, styles )
-        |> map( bundler )
-        |> maybe( babel() )
-        |> maybe( minify() )
-        |> map( rename( output.filename ) )
-        |> map( gulp.dest( output.dir ) )
+    () =>
+        merge( scripts, styles )
+            |> map( bundler )
+            |> maybe( babel() )
+            |> maybe( minify() )
+            |> map( rename( output.filename ) )
+            |> map( gulp.dest( output.dir ) )
 
 
 

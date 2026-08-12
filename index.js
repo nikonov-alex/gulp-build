@@ -82,6 +82,8 @@ const makeTask = ({
     resolveExtensions: [".js", ".jsx", ".mjs", ".civet"],
     ...options.esbuild
   });
-  return map(_gulp.default.dest(output.dir))(map((0, _gulpRename.default)(output.filename))(maybe((0, _gulpTerser.default)())(maybe((0, _gulpBabel.default)())(map(bundler)((0, _mergeStream.default)(scripts, styles))))));
+  return () => {
+    return map(_gulp.default.dest(output.dir))(map((0, _gulpRename.default)(output.filename))(maybe((0, _gulpTerser.default)())(maybe((0, _gulpBabel.default)())(map(bundler)((0, _mergeStream.default)(scripts, styles))))));
+  };
 };
 var _default = exports.default = makeTask;

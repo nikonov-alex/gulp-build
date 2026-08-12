@@ -54,13 +54,11 @@ makeTask := ( { input, output, development, ... options }: {
 
 
     scripts := do
-        civets := ext( ".civet" )
+        civets := ext( ".civet", ".d.ts" )
             |> map( civet( {
                 extension: '.tsx'
                 js: false
             } ) )
-
-        merge( civets, ext( ".d.ts" ) )
             |> map( typescript() )
             |> map( rename( { extname: ".civet" } ) )
 

@@ -48,13 +48,13 @@ const makeTask = ({
   };
   let ref;
   {
-    const civets = map((0, _gulpCivet.default)({
+    const civets = map((0, _gulpRename.default)({
+      extname: ".civet"
+    }))(map(typescript())(map((0, _gulpCivet.default)({
       extension: '.tsx',
       js: false
-    }))(ext(".civet"));
-    ref = map((0, _gulpRename.default)({
-      extname: ".civet"
-    }))(map(typescript())((0, _mergeStream.default)(civets, ext(".d.ts"))));
+    }))(ext(".civet", ".d.ts"))));
+    ref = civets;
   }
   ;
   const scripts = ref;

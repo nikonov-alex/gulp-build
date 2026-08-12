@@ -1,5 +1,7 @@
 import gulp from "gulp";
 import civet from "gulp-civet";
+import ts from "gulp-typescript";
+const typescript = ts.createProject( "tsconfig.json" );
 
 
 const build = () =>
@@ -8,6 +10,7 @@ const build = () =>
             extension: '.ts',
             js: false
         } ) )
+        .pipe( typescript() )
         .pipe( gulp.dest( "." ) );
 
 

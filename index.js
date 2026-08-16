@@ -122,10 +122,7 @@ const makeTask = ({
     entry: relative(input.entry),
     bundle: true,
     loader: {
-      ".civet": "js",
-      '.css': 'text',
-      '.scss': 'text',
-      '.sass': 'text'
+      ".civet": "js"
     },
     resolveExtensions: [".js", ".jsx", ".mjs", ".civet"],
     plugins: [stylesPlugin],

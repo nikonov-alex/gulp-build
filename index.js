@@ -4,8 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+require("core-js/modules/es.array.push.js");
 require("core-js/modules/es.iterator.constructor.js");
 require("core-js/modules/es.iterator.map.js");
+require("core-js/modules/es.json.stringify.js");
 var _gulp = _interopRequireDefault(require("gulp"));
 var _path = _interopRequireDefault(require("path"));
 var _gulpCivet = _interopRequireDefault(require("gulp-civet"));
@@ -28,6 +30,22 @@ const map = plugin => {
 };
 const id = value => value;
 const skip = id;
+const readFile = stream => async targetPath => {
+  const isVinylFile = file => {
+    return !!file && typeof file === 'object' && 'path' in file && 'isBuffer' in file;
+  };
+  const absoluteTarget = _path.default.resolve(targetPath);
+  const results = [];
+  for await (const file of stream) {
+    if (!(isVinylFile(file) && file.path === absoluteTarget && file.isBuffer())) continue;
+    results.push(file.contents.toString('utf8'));
+  }
+  ;
+  const contents = results;
+  if (contents.length > 0) {
+    return contents[0];
+  } else return null;
+};
 const makeTask = ({
   input,
   output,
@@ -70,6 +88,36 @@ const makeTask = ({
   }
   ;
   const styles = ref1;
+  const stylesPlugin = {
+    name: 'css-stylesheet',
+    setup(build) {
+      const readStyle = readFile(styles);
+      return build.onLoad({
+        filter: /\.(css|sass|scss)$/
+      }, async args => {
+        const styles = await readStyle(args.path);
+        if (styles === null) {
+          return {
+            errors: [{
+              text: "Failed to read CSS file",
+              location: {
+                file: args.path
+              }
+            }]
+          };
+        } else {
+          const contents = `
+                        const stylesheet = new CSSStyleSheet();
+                        stylesheet.replaceSync(${JSON.stringify(styles)});
+                        export default stylesheet;`;
+          return {
+            contents,
+            loader: 'js'
+          };
+        }
+      });
+    }
+  };
   const bundler = (0, _gulpEsbuild.default)({
     entry: relative(input.entry),
     bundle: true,
@@ -80,6 +128,7 @@ const makeTask = ({
       '.sass': 'text'
     },
     resolveExtensions: [".js", ".jsx", ".mjs", ".civet"],
+    plugins: [stylesPlugin],
     ...options.esbuild
   });
   return () => {

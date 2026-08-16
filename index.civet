@@ -12,6 +12,8 @@ import merge from "merge-stream"
 import babel from "gulp-babel"
 import minify from "gulp-terser"
 import postcss from "gulp-postcss"
+import File from 'vinyl'
+import { PluginBuild } from 'esbuild'
 
 
 Stream ::= NodeJS.ReadWriteStream
@@ -24,6 +26,22 @@ map :=
 id := <A>( value: A ) => value
 
 skip := id
+
+
+
+readFile := (stream: Stream) => async (targetPath: string ) =>
+    isVinylFile := ( file: unknown ): file is File =>
+        !!file && typeof file is 'object' && 'path' in file && 'isBuffer' in file
+
+    absoluteTarget := path.resolve( targetPath )
+
+    contents := for await file of stream
+        when isVinylFile(file) && file.path === absoluteTarget && file.isBuffer()
+            file.contents.toString('utf8')
+
+    if contents.length > 0 then contents[0] else null
+
+  
 
 
 
@@ -75,6 +93,31 @@ makeTask := ( { input, output, development, ... options }: {
         merge( sasses, scsses )
             |> maybe( postcss() )
 
+    stylesPlugin := {
+        name: 'css-stylesheet'
+        setup( build: PluginBuild ) {
+            readStyle := readFile( styles )
+
+            build.onLoad({ filter: /\.(css|sass|scss)$/ }, async (args) =>
+                styles := await readStyle( args.path )
+
+                if styles is null then
+                    {
+                        errors: [ {
+                            text: "Failed to read CSS file"
+                            location: { file: args.path }
+                        } ]
+                    }
+                else do
+                    contents := `
+                        const stylesheet = new CSSStyleSheet();
+                        stylesheet.replaceSync(${JSON.stringify(styles)});
+                        export default stylesheet;`
+
+                    { contents, loader: 'js' }
+            )
+        }
+    }
 
     bundler := esbuild( {
         entry: relative( input.entry )
@@ -86,6 +129,7 @@ makeTask := ( { input, output, development, ... options }: {
             '.sass': 'text'
         }
         resolveExtensions: [ ".js", ".jsx", ".mjs", ".civet" ]
+        plugins: [ stylesPlugin ]
         ... options.esbuild
     } )
 
